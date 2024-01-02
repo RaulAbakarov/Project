@@ -1,151 +1,3314 @@
-<!-- templates/index.html -->
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Battleship Game</title>
-    <style>
-        body {
-            font-family: 'Arial', sans-serif;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            transition: background-color 0.5s ease-in-out;
-        }
-
-        h1 {
-            color: #333;
-        }
-
-        #board {
-            display: grid;
-            grid-template-columns: repeat(5, 50px);
-            grid-gap: 5px;
-            opacity: 1;
-            transition: opacity 0.5s ease-in-out;
-        }
-
-        .cell {
-            width: 50px;
-            height: 50px;
-            background-color: #ddd;
-            border: 1px solid #bbb;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 1.2em;
-            color: #333;
-            transition: background-color 0.3s ease-in-out;
-        }
-
-        .cell:hover {
-            background-color: #ccc;
-        }
-
-        .winning {
-            animation: fadeIn 1s forwards;
-        }
-
-        .losing {
-            animation: fadeIn 1s forwards;
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
+<html lang="en" data-accept-language="en">
+  <head>
+    <script async="" src="https://mc.yandex.ru/metrika/watch.js"></script>
+    <script>
+      (function (window, document) {
+        if (window.Node && Node.prototype) {
+          var sandbox;
+          var timeout;
+          var safe = false;
+          var scriptsCache = [];
+          var scripts = [];
+          var proto = Node.prototype;
+          var methods = ["insertBefore", "replaceChild", "appendChild"];
+          var append = function () {
+            sandbox = sandbox || document.getElementsByTagName("body")[0];
+            if (sandbox) {
+              scripts.forEach(function (src, i, scripts) {
+                var script = document.createElement("script");
+                script.src = src;
+                safe = true;
+                sandbox.appendChild(script);
+                safe = false;
+                scripts.splice(i, 1);
+              });
+              return;
             }
-            to {
-                opacity: 1;
-            }
+            clearTimeout(timeout);
+            timeout = setTimeout(append, 0);
+          };
+          methods.forEach(function (method) {
+            var origin = proto[method];
+            proto[method] = function (el) {
+              if (
+                el.nodeName &&
+                el.nodeName.toLowerCase() == "script" &&
+                !safe
+              ) {
+                var safeScripts = [
+                  "mc.yandex.ru",
+                  "apis.google.com",
+                  "pagead2.googlesyndication.com",
+                ];
+                var safeScriptsRegExp = new RegExp(
+                  "^(https?:)//" + safeScripts.join("|"),
+                  "i"
+                );
+                if (
+                  el.src &&
+                  safeScripts.length &&
+                  safeScriptsRegExp.test(el.src)
+                ) {
+                  if (scriptsCache.indexOf(el.src) == -1) {
+                    scripts.push(el.src);
+                    scriptsCache.push(el.src);
+                    return origin.apply(this, arguments);
+                  }
+                }
+                return false;
+              } else {
+                return origin.apply(this, arguments);
+              }
+            };
+          });
         }
+      })(window, document);
+    </script>
 
-        #result {
-            margin-top: 20px;
-            font-size: 1.2em;
-            font-weight: bold;
-            color: #333;
-        }
+    <meta charset="utf-8" />
 
-        #theme-toggle {
-            margin-top: 20px;
-            padding: 10px;
-            cursor: pointer;
-            background-color: #ddd;
-            border: 1px solid #bbb;
-            border-radius: 5px;
-            color: #333;
-            font-weight: bold;
-        }
-    </style>
-</head>
-<body>
-    <h1>Battleship Game</h1>
+    <title>Battleship (free online game for two players)</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
 
-    <div id="board"></div>
-    <div id="result"></div>
-    <div id="theme-toggle" onclick="toggleTheme()">Toggle Theme</div>
+    <link rel="stylesheet" href="style.css" />
+    <!--[if IE 8
+      ]><link rel="stylesheet" href="/static/build/1025/css/style.ie8.css"
+    /><![endif]-->
+
+    <link rel="shortcut icon" href="/static/favicon.ico" />
+    <link rel="apple-touch-icon" href="/static/apple-touch-icon.png" />
 
     <script>
-        function createBoard() {
-            const boardElement = document.getElementById('board');
-
-            for (let i = 0; i < 5; i++) {
-                for (let j = 0; j < 5; j++) {
-                    const cell = document.createElement('div');
-                    cell.className = 'cell';
-                    cell.dataset.row = i;
-                    cell.dataset.col = j;
-                    cell.addEventListener('click', handleCellClick);
-                    boardElement.appendChild(cell);
-                }
-            }
+      window.onerror = function (message, file, line) {
+        if (arguments.length > 2) {
+          if (file.indexOf("battleship-game.org") != -1) {
+            new Image().src =
+              "/api/error/?key=" +
+              window.name +
+              "&message=" +
+              message +
+              "&ua=" +
+              navigator.userAgent +
+              "&file=" +
+              file +
+              "&line=" +
+              line;
+          }
         }
-
-        function handleCellClick(event) {
-            const row = event.target.dataset.row;
-            const col = event.target.dataset.col;
-
-            fetch('/play', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: `guessRow=${row}&guessCol=${col}`,
-            })
-            .then(response => response.json())
-            .then(data => {
-                const boardElement = document.getElementById('board');
-                const resultElement = document.getElementById('result');
-
-                if (data.result === 'win') {
-                    boardElement.classList.add('winning');
-                    resultElement.textContent = `Congratulations! You sank the battleship at row ${data.ship_row} and column ${data.ship_col}.`;
-                } else {
-                    boardElement.classList.add('losing');
-                    resultElement.textContent = `Missed! The battleship was at row ${data.ship_row} and column ${data.ship_col}.`;
-                }
-
-                setTimeout(() => {
-                    boardElement.classList.remove('winning', 'losing');
-                    resultElement.textContent = '';
-                }, 3000);
-            })
-            .catch(error => console.error('Error:', error));
-        }
-
-        function toggleTheme() {
-            const bodyElement = document.body;
-            bodyElement.classList.toggle('dark-theme');
-        }
-
-        createBoard();
+      };
     </script>
-</body>
+
+    <script src="/static/js/pagead2.js?v=1025"></script>
+    <script src="script.js">
+      {"i18n":{"lang":"en","title":"Battleship","letters":"A,B,C,D,E,F,G,H,I,J","whoIsOnline":"%d %plural(%d|player|players)% online"},"version":1025,"subdomain":"en"}
+    </script>
+
+    <link
+      rel="alternate"
+      hreflang="be"
+      href="https://battleship-game.org/be/"
+    />
+    <link
+      rel="alternate"
+      hreflang="ca"
+      href="https://battleship-game.org/ca/"
+    />
+    <link
+      rel="alternate"
+      hreflang="cs"
+      href="https://battleship-game.org/cs/"
+    />
+    <link
+      rel="alternate"
+      hreflang="da"
+      href="https://battleship-game.org/da/"
+    />
+    <link
+      rel="alternate"
+      hreflang="de"
+      href="https://battleship-game.org/de/"
+    />
+    <link
+      rel="alternate"
+      hreflang="el"
+      href="https://battleship-game.org/el/"
+    />
+    <link
+      rel="alternate"
+      hreflang="en"
+      href="https://battleship-game.org/en/"
+    />
+    <link
+      rel="alternate"
+      hreflang="es"
+      href="https://battleship-game.org/es/"
+    />
+    <link
+      rel="alternate"
+      hreflang="fr"
+      href="https://battleship-game.org/fr/"
+    />
+    <link
+      rel="alternate"
+      hreflang="hu"
+      href="https://battleship-game.org/hu/"
+    />
+    <link
+      rel="alternate"
+      hreflang="hy"
+      href="https://battleship-game.org/hy/"
+    />
+    <link
+      rel="alternate"
+      hreflang="it"
+      href="https://battleship-game.org/it/"
+    />
+    <link
+      rel="alternate"
+      hreflang="ko"
+      href="https://battleship-game.org/ko/"
+    />
+    <link
+      rel="alternate"
+      hreflang="lv"
+      href="https://battleship-game.org/lv/"
+    />
+    <link
+      rel="alternate"
+      hreflang="nl"
+      href="https://battleship-game.org/nl/"
+    />
+    <link
+      rel="alternate"
+      hreflang="ja"
+      href="https://battleship-game.org/ja/"
+    />
+    <link
+      rel="alternate"
+      hreflang="pl"
+      href="https://battleship-game.org/pl/"
+    />
+    <link
+      rel="alternate"
+      hreflang="pt"
+      href="https://battleship-game.org/pt/"
+    />
+    <link
+      rel="alternate"
+      hreflang="ru"
+      href="https://battleship-game.org/ru/"
+    />
+    <link
+      rel="alternate"
+      hreflang="sr"
+      href="https://battleship-game.org/sr/"
+    />
+    <link
+      rel="alternate"
+      hreflang="fi"
+      href="https://battleship-game.org/fi/"
+    />
+    <link
+      rel="alternate"
+      hreflang="sv"
+      href="https://battleship-game.org/sv/"
+    />
+    <link
+      rel="alternate"
+      hreflang="tr"
+      href="https://battleship-game.org/tr/"
+    />
+    <link
+      rel="alternate"
+      hreflang="uk"
+      href="https://battleship-game.org/uk/"
+    />
+    <link
+      rel="alternate"
+      hreflang="zh"
+      href="https://battleship-game.org/zh/"
+    />
+
+    <link
+      rel="alternate"
+      hreflang="x-default"
+      href="https://battleship-game.org/"
+    />
+
+    <link rel="author" href="/static/humans.txt" />
+
+    <meta
+      name="description"
+      content="Battleship — online game for 2 players. Arrange ships, wait for opponent and start playing."
+    />
+
+    <meta
+      name="google-site-verification"
+      content="H9dKy22eCZUymFFpfDkSs8ufVYF83ywTadl5sIBtV9Q"
+    />
+
+    <script>
+      if (top.location == self.location) {
+        document.write('<meta name="google" content="notranslate" />');
+      }
+    </script>
+    <meta name="google" content="notranslate" />
+
+    <meta name="robots" content="noyaca" />
+  </head>
+  <body
+    class="body body__21247141245 body__en body__with-pointerevents body__ssl"
+    style=""
+  >
+    <script>
+      if (top.location != self.location) {
+        document.write('<div class="body-iframe">');
+      }
+    </script>
+
+    <script>
+      if (!window.adblock) {
+        document.write(
+          '<div class="body-sda"><div class="sda-block sda-block__google"> \
+            <script async="async" src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></s' +
+            'cript> \
+            <ins class="adsbygoogle" style="display:inline-block;width:970px;height:90px" data-ad-client="ca-pub-2693394875594183" data-ad-slot="8816701290"></ins> \
+            <script>(adsbygoogle = window.adsbygoogle || []).push({});</s' +
+            "cript> \
+            </div></div>"
+        );
+      }
+    </script>
+    <div class="body-sda">
+      <div class="sda-block sda-block__google">
+        <script
+          async="async"
+          src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
+        ></script>
+        <ins
+          class="adsbygoogle"
+          style="display: inline-block; width: 970px; height: 90px"
+          data-ad-client="ca-pub-2693394875594183"
+          data-ad-slot="8816701290"
+          ><iframe
+            id="aswift_0"
+            style="
+              height: 1px !important;
+              max-height: 1px !important;
+              max-width: 1px !important;
+              width: 1px !important;
+            "
+            ><iframe id="google_ads_frame0"></iframe></iframe
+        ></ins>
+        <script>
+          (adsbygoogle = window.adsbygoogle || []).push({});
+        </script>
+      </div>
+    </div>
+
+    <div class="body-wrap">
+      <header class="header">
+        <h1 class="logo">
+          Battleship <span class="online_count">115 players online</span>
+        </h1>
+        <div class="none">
+          &nbsp;— online game for 2 players. Arrange ships, wait for opponent
+          and start playing.
+        </div>
+      </header>
+      <ul class="langs">
+        <li class="lang lang__be">
+          <a
+            class="lang-link"
+            href="https://battleship-game.org/be/"
+            hreflang="be"
+            title="Belarusian"
+            >Беларуская</a
+          >
+        </li>
+        <li class="lang lang__ca">
+          <a
+            class="lang-link"
+            href="https://battleship-game.org/ca/"
+            hreflang="ca"
+            title="Catalan"
+            >Català</a
+          >
+        </li>
+        <li class="lang lang__cs">
+          <a
+            class="lang-link"
+            href="https://battleship-game.org/cs/"
+            hreflang="cs"
+            title="Czech"
+            >Čeština</a
+          >
+        </li>
+        <li class="lang lang__da">
+          <a
+            class="lang-link"
+            href="https://battleship-game.org/da/"
+            hreflang="da"
+            title="Danish"
+            >Dansk</a
+          >
+        </li>
+        <li class="lang lang__de">
+          <a
+            class="lang-link"
+            href="https://battleship-game.org/de/"
+            hreflang="de"
+            title="German"
+            >Deutsch</a
+          >
+        </li>
+        <li class="lang lang__el">
+          <a
+            class="lang-link"
+            href="https://battleship-game.org/el/"
+            hreflang="el"
+            title="Greek"
+            >Ελληνικά</a
+          >
+        </li>
+        <li class="lang lang__en lang__selected lang__priority">
+          <a
+            class="lang-link"
+            href="https://battleship-game.org/en/"
+            hreflang="en"
+            title="English"
+            >English</a
+          >
+        </li>
+        <li class="lang lang__es">
+          <a
+            class="lang-link"
+            href="https://battleship-game.org/es/"
+            hreflang="es"
+            title="Spanish"
+            >Español</a
+          >
+        </li>
+        <li class="lang lang__fr">
+          <a
+            class="lang-link"
+            href="https://battleship-game.org/fr/"
+            hreflang="fr"
+            title="French"
+            >Français</a
+          >
+        </li>
+        <li class="lang lang__hu">
+          <a
+            class="lang-link"
+            href="https://battleship-game.org/hu/"
+            hreflang="hu"
+            title="Hungarian"
+            >Magyar</a
+          >
+        </li>
+        <li class="lang lang__hy">
+          <a
+            class="lang-link"
+            href="https://battleship-game.org/hy/"
+            hreflang="hy"
+            title="Armenian"
+            >Հայերեն</a
+          >
+        </li>
+        <li class="lang lang__it">
+          <a
+            class="lang-link"
+            href="https://battleship-game.org/it/"
+            hreflang="it"
+            title="Italian"
+            >Italiano</a
+          >
+        </li>
+        <li class="lang lang__ko">
+          <a
+            class="lang-link"
+            href="https://battleship-game.org/ko/"
+            hreflang="ko"
+            title="Korean"
+            >한국어</a
+          >
+        </li>
+        <li class="lang lang__lv">
+          <a
+            class="lang-link"
+            href="https://battleship-game.org/lv/"
+            hreflang="lv"
+            title="Latvian"
+            >Latviešu</a
+          >
+        </li>
+        <li class="lang lang__nl">
+          <a
+            class="lang-link"
+            href="https://battleship-game.org/nl/"
+            hreflang="nl"
+            title="Dutch"
+            >Nederlands</a
+          >
+        </li>
+        <li class="lang lang__ja">
+          <a
+            class="lang-link"
+            href="https://battleship-game.org/ja/"
+            hreflang="ja"
+            title="Japanese"
+            >日本語</a
+          >
+        </li>
+        <li class="lang lang__pl">
+          <a
+            class="lang-link"
+            href="https://battleship-game.org/pl/"
+            hreflang="pl"
+            title="Polish"
+            >Polski</a
+          >
+        </li>
+        <li class="lang lang__pt">
+          <a
+            class="lang-link"
+            href="https://battleship-game.org/pt/"
+            hreflang="pt"
+            title="Portuguese"
+            >Português</a
+          >
+        </li>
+        <li class="lang lang__ru">
+          <a
+            class="lang-link"
+            href="https://battleship-game.org/ru/"
+            hreflang="ru"
+            title="Russian"
+            >Русский</a
+          >
+        </li>
+        <li class="lang lang__sr">
+          <a
+            class="lang-link"
+            href="https://battleship-game.org/sr/"
+            hreflang="sr"
+            title="Serbian"
+            >Српски</a
+          >
+        </li>
+        <li class="lang lang__fi">
+          <a
+            class="lang-link"
+            href="https://battleship-game.org/fi/"
+            hreflang="fi"
+            title="Finnish"
+            >Suomi</a
+          >
+        </li>
+        <li class="lang lang__sv">
+          <a
+            class="lang-link"
+            href="https://battleship-game.org/sv/"
+            hreflang="sv"
+            title="Swedish"
+            >Svenska</a
+          >
+        </li>
+        <li class="lang lang__tr">
+          <a
+            class="lang-link"
+            href="https://battleship-game.org/tr/"
+            hreflang="tr"
+            title="Turkish"
+            >Türkçe</a
+          >
+        </li>
+        <li class="lang lang__uk">
+          <a
+            class="lang-link"
+            href="https://battleship-game.org/uk/"
+            hreflang="uk"
+            title="Ukrainian"
+            >Українська</a
+          >
+        </li>
+        <li class="lang lang__zh">
+          <a
+            class="lang-link"
+            href="https://battleship-game.org/zh/"
+            hreflang="zh"
+            title="Chinese"
+            >中文</a
+          >
+        </li>
+      </ul>
+      <div class="notifications-wrap">
+        <div class="notifications">
+          <div class="notification notification__init">
+            <div class="notification-message">Place the ships.</div>
+          </div>
+          <div class="notification notification__connect-to-server none">
+            <div class="notification-message">Connecting to server.</div>
+          </div>
+          <div class="notification notification__waiting-for-rival none">
+            <div class="notification-message">Waiting for opponent.</div>
+          </div>
+          <div class="notification notification__game-started-move-on none">
+            <div class="notification-message">The game started, your turn.</div>
+          </div>
+          <div class="notification notification__game-started-move-off none">
+            <div class="notification-message">
+              The game began, opponent's turn.
+            </div>
+          </div>
+          <div class="notification notification__move-on none">
+            <div class="notification-message">Your turn.</div>
+          </div>
+          <div class="notification notification__move-off none">
+            <div class="notification-message">
+              Opponent's turn, please wait.
+            </div>
+          </div>
+          <div class="notification notification__rival-leave none">
+            <div class="notification-message">
+              Your opponent has left the game.
+            </div>
+            <input
+              class="notification-submit restart"
+              type="submit"
+              value="Create new game"
+            />
+          </div>
+          <div class="notification notification__game-over-win none">
+            <div class="notification-message">
+              Game over. Congratulations, you won!
+            </div>
+            <input
+              class="notification-submit restart"
+              type="submit"
+              value="Play again"
+            />
+          </div>
+          <div class="notification notification__game-over-lose none">
+            <div class="notification-message">Game over. You lose.</div>
+            <input
+              class="notification-submit restart"
+              type="submit"
+              value="Rematch"
+            />
+          </div>
+          <div class="notification notification__server-error none">
+            <div class="notification-message">Server is unavailable.</div>
+          </div>
+          <div class="notification notification__game-error none">
+            <div class="notification-message">
+              Unexpected error. Further play is impossible.
+            </div>
+            <input
+              class="notification-submit restart"
+              type="submit"
+              value="Create new game"
+            />
+          </div>
+          <div class="notification notification__cws none">
+            <div class="notification-message">
+              If you like this game, please write a review in the Chrome Web
+              Store (it takes less than one minute).
+            </div>
+            <input
+              class="notification-submit notification-submit__accept"
+              type="submit"
+              data-target="http://chrome.google.com/webstore/detail/battleship/hjgmfhnanfbghmpcbdfgpigcgdbaggfm?hl=en"
+              value="Write a review"
+            />
+            <input
+              class="notification-submit notification-submit__cancel"
+              type="submit"
+              value="Not now"
+            />
+          </div>
+        </div>
+      </div>
+      <div class="battlefields clearfix">
+        <div class="battlefield battlefield__self">
+          <div class="battlefield-gap">
+            <div class="battlefield-table-placeholder">
+              <table class="battlefield-table">
+                <tbody>
+                  <tr class="battlefield-row">
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="0"
+                        data-x="0"
+                      >
+                        <span class="z"></span>&nbsp;
+                        <div class="marker marker__row">1</div>
+                        <div class="marker marker__col">A</div>
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="0"
+                        data-x="1"
+                      >
+                        <span class="z"></span>&nbsp;
+                        <div class="marker marker__col">B</div>
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="0"
+                        data-x="2"
+                      >
+                        <span class="z"></span>&nbsp;
+                        <div class="marker marker__col">C</div>
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="0"
+                        data-x="3"
+                      >
+                        <span class="z"></span>&nbsp;
+                        <div class="marker marker__col">D</div>
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="0"
+                        data-x="4"
+                      >
+                        <span class="z"></span>&nbsp;
+                        <div class="marker marker__col">E</div>
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="0"
+                        data-x="5"
+                      >
+                        <span class="z"></span>&nbsp;
+                        <div class="marker marker__col">F</div>
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__busy">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="0"
+                        data-x="6"
+                      >
+                        <span class="z"></span>&nbsp;
+                        <div class="marker marker__col">G</div>
+                        <div
+                          data-id="rCtJGXScTfaj"
+                          data-length="2"
+                          data-position="h"
+                          class="ship-box ship-box__h ui-draggable ship-box__draggable"
+                          style="
+                            width: 4em;
+                            height: 2em;
+                            padding-right: 1px;
+                            padding-bottom: 0px;
+                          "
+                        ></div>
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__busy">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="0"
+                        data-x="7"
+                      >
+                        <span class="z"></span>&nbsp;
+                        <div class="marker marker__col">H</div>
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="0"
+                        data-x="8"
+                      >
+                        <span class="z"></span>&nbsp;
+                        <div class="marker marker__col">I</div>
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="0"
+                        data-x="9"
+                      >
+                        <span class="z"></span>&nbsp;
+                        <div class="marker marker__col">J</div>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr class="battlefield-row">
+                    <td class="battlefield-cell battlefield-cell__busy">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="1"
+                        data-x="0"
+                      >
+                        <span class="z"></span>&nbsp;
+                        <div class="marker marker__row">2</div>
+                        <div
+                          data-id="zKwxt6cPt0sf"
+                          data-length="1"
+                          data-position="h"
+                          class="ship-box ship-box__h ui-draggable ship-box__draggable"
+                          style="
+                            width: 2em;
+                            height: 2em;
+                            padding-right: 0px;
+                            padding-bottom: 0px;
+                          "
+                        ></div>
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="1"
+                        data-x="1"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__busy">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="1"
+                        data-x="2"
+                      >
+                        <span class="z"></span>&nbsp;
+                        <div
+                          data-id="HA4XJ6Al5hjA"
+                          data-length="1"
+                          data-position="h"
+                          class="ship-box ship-box__h ui-draggable ship-box__draggable"
+                          style="
+                            width: 2em;
+                            height: 2em;
+                            padding-right: 0px;
+                            padding-bottom: 0px;
+                          "
+                        ></div>
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="1"
+                        data-x="3"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="1"
+                        data-x="4"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="1"
+                        data-x="5"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="1"
+                        data-x="6"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="1"
+                        data-x="7"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="1"
+                        data-x="8"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="1"
+                        data-x="9"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                  </tr>
+                  <tr class="battlefield-row">
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="2"
+                        data-x="0"
+                      >
+                        <span class="z"></span>&nbsp;
+                        <div class="marker marker__row">3</div>
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="2"
+                        data-x="1"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="2"
+                        data-x="2"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="2"
+                        data-x="3"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="2"
+                        data-x="4"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="2"
+                        data-x="5"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="2"
+                        data-x="6"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__busy">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="2"
+                        data-x="7"
+                      >
+                        <span class="z"></span>&nbsp;
+                        <div
+                          data-id="ffKkV9sFmZ56"
+                          data-length="4"
+                          data-position="v"
+                          class="ship-box ship-box__v ui-draggable ship-box__draggable"
+                          style="
+                            width: 2em;
+                            height: 8em;
+                            padding-right: 0px;
+                            padding-bottom: 3px;
+                          "
+                        ></div>
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="2"
+                        data-x="8"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="2"
+                        data-x="9"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                  </tr>
+                  <tr class="battlefield-row">
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="3"
+                        data-x="0"
+                      >
+                        <span class="z"></span>&nbsp;
+                        <div class="marker marker__row">4</div>
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="3"
+                        data-x="1"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="3"
+                        data-x="2"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="3"
+                        data-x="3"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="3"
+                        data-x="4"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="3"
+                        data-x="5"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="3"
+                        data-x="6"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__busy">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="3"
+                        data-x="7"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="3"
+                        data-x="8"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="3"
+                        data-x="9"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                  </tr>
+                  <tr class="battlefield-row">
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="4"
+                        data-x="0"
+                      >
+                        <span class="z"></span>&nbsp;
+                        <div class="marker marker__row">5</div>
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="4"
+                        data-x="1"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="4"
+                        data-x="2"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="4"
+                        data-x="3"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="4"
+                        data-x="4"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__busy">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="4"
+                        data-x="5"
+                      >
+                        <span class="z"></span>&nbsp;
+                        <div
+                          data-id="w1PkvWdNQwJ0"
+                          data-length="3"
+                          data-position="v"
+                          class="ship-box ship-box__v ui-draggable ship-box__draggable"
+                          style="
+                            width: 2em;
+                            height: 6em;
+                            padding-right: 0px;
+                            padding-bottom: 2px;
+                          "
+                        ></div>
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="4"
+                        data-x="6"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__busy">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="4"
+                        data-x="7"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="4"
+                        data-x="8"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="4"
+                        data-x="9"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                  </tr>
+                  <tr class="battlefield-row">
+                    <td class="battlefield-cell battlefield-cell__busy">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="5"
+                        data-x="0"
+                      >
+                        <span class="z"></span>&nbsp;
+                        <div class="marker marker__row">6</div>
+                        <div
+                          data-id="WdYuKE2vcihf"
+                          data-length="2"
+                          data-position="v"
+                          class="ship-box ship-box__v ui-draggable ship-box__draggable"
+                          style="
+                            width: 2em;
+                            height: 4em;
+                            padding-right: 0px;
+                            padding-bottom: 1px;
+                          "
+                        ></div>
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="5"
+                        data-x="1"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="5"
+                        data-x="2"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="5"
+                        data-x="3"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="5"
+                        data-x="4"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__busy">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="5"
+                        data-x="5"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="5"
+                        data-x="6"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__busy">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="5"
+                        data-x="7"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="5"
+                        data-x="8"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="5"
+                        data-x="9"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                  </tr>
+                  <tr class="battlefield-row">
+                    <td class="battlefield-cell battlefield-cell__busy">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="6"
+                        data-x="0"
+                      >
+                        <span class="z"></span>&nbsp;
+                        <div class="marker marker__row">7</div>
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="6"
+                        data-x="1"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="6"
+                        data-x="2"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="6"
+                        data-x="3"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="6"
+                        data-x="4"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__busy">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="6"
+                        data-x="5"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="6"
+                        data-x="6"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="6"
+                        data-x="7"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="6"
+                        data-x="8"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__busy">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="6"
+                        data-x="9"
+                      >
+                        <span class="z"></span>&nbsp;
+                        <div
+                          data-id="qyCp3hGdoZxS"
+                          data-length="1"
+                          data-position="h"
+                          class="ship-box ship-box__h ui-draggable ship-box__draggable"
+                          style="
+                            width: 2em;
+                            height: 2em;
+                            padding-right: 0px;
+                            padding-bottom: 0px;
+                          "
+                        ></div>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr class="battlefield-row">
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="7"
+                        data-x="0"
+                      >
+                        <span class="z"></span>&nbsp;
+                        <div class="marker marker__row">8</div>
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="7"
+                        data-x="1"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="7"
+                        data-x="2"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="7"
+                        data-x="3"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="7"
+                        data-x="4"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="7"
+                        data-x="5"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="7"
+                        data-x="6"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__busy">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="7"
+                        data-x="7"
+                      >
+                        <span class="z"></span>&nbsp;
+                        <div
+                          data-id="NsJioEZCISt2"
+                          data-length="3"
+                          data-position="v"
+                          class="ship-box ship-box__v ui-draggable ship-box__draggable"
+                          style="
+                            width: 2em;
+                            height: 6em;
+                            padding-right: 0px;
+                            padding-bottom: 2px;
+                          "
+                        ></div>
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="7"
+                        data-x="8"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="7"
+                        data-x="9"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                  </tr>
+                  <tr class="battlefield-row">
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="8"
+                        data-x="0"
+                      >
+                        <span class="z"></span>&nbsp;
+                        <div class="marker marker__row">9</div>
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="8"
+                        data-x="1"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="8"
+                        data-x="2"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__busy">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="8"
+                        data-x="3"
+                      >
+                        <span class="z"></span>&nbsp;
+                        <div
+                          data-id="ofZU0BIW8jRe"
+                          data-length="2"
+                          data-position="h"
+                          class="ship-box ship-box__h ui-draggable ship-box__draggable"
+                          style="
+                            width: 4em;
+                            height: 2em;
+                            padding-right: 1px;
+                            padding-bottom: 0px;
+                          "
+                        ></div>
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__busy">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="8"
+                        data-x="4"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="8"
+                        data-x="5"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="8"
+                        data-x="6"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__busy">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="8"
+                        data-x="7"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="8"
+                        data-x="8"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__busy">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="8"
+                        data-x="9"
+                      >
+                        <span class="z"></span>&nbsp;
+                        <div
+                          data-id="7CFmoA7MKmvx"
+                          data-length="1"
+                          data-position="h"
+                          class="ship-box ship-box__h ui-draggable ship-box__draggable"
+                          style="
+                            width: 2em;
+                            height: 2em;
+                            padding-right: 0px;
+                            padding-bottom: 0px;
+                          "
+                        ></div>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr class="battlefield-row">
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="9"
+                        data-x="0"
+                      >
+                        <span class="z"></span>&nbsp;
+                        <div class="marker marker__row">10</div>
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="9"
+                        data-x="1"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="9"
+                        data-x="2"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="9"
+                        data-x="3"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="9"
+                        data-x="4"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="9"
+                        data-x="5"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="9"
+                        data-x="6"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__busy">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="9"
+                        data-x="7"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="9"
+                        data-x="8"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="9"
+                        data-x="9"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="battlefield-label">Your grid</div>
+            <ul class="placeships">
+              <li class="placeships-variant placeships-variant__randomly">
+                <span class="placeships-variant-link">Randomise</span>
+              </li>
+              <li class="placeships-variant placeships-variant__hands">
+                <span class="placeships-variant-link">Reset</span>
+              </li>
+              <li class="placeships-variant placeships-variant__archive">
+                <span class="placeships-variant-link">Archive</span>
+              </li>
+            </ul>
+            <div class="port none">
+              <div class="port-instruction">
+                Drag the ships to the grid, and then click to rotate:
+              </div>
+              <div class="port-lines"></div>
+            </div>
+          </div>
+          <div class="battlefield-stat none"></div>
+        </div>
+        <div class="battlefield battlefield__rival battlefield__wait">
+          <div class="battlefield-gap">
+            <div class="battlefield-table-placeholder">
+              <table class="battlefield-table">
+                <tbody>
+                  <tr class="battlefield-row">
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="0"
+                        data-x="0"
+                      >
+                        <span class="z"></span>&nbsp;
+                        <div class="marker marker__row">1</div>
+                        <div class="marker marker__col">A</div>
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="0"
+                        data-x="1"
+                      >
+                        <span class="z"></span>&nbsp;
+                        <div class="marker marker__col">B</div>
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="0"
+                        data-x="2"
+                      >
+                        <span class="z"></span>&nbsp;
+                        <div class="marker marker__col">C</div>
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="0"
+                        data-x="3"
+                      >
+                        <span class="z"></span>&nbsp;
+                        <div class="marker marker__col">D</div>
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="0"
+                        data-x="4"
+                      >
+                        <span class="z"></span>&nbsp;
+                        <div class="marker marker__col">E</div>
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="0"
+                        data-x="5"
+                      >
+                        <span class="z"></span>&nbsp;
+                        <div class="marker marker__col">F</div>
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="0"
+                        data-x="6"
+                      >
+                        <span class="z"></span>&nbsp;
+                        <div class="marker marker__col">G</div>
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="0"
+                        data-x="7"
+                      >
+                        <span class="z"></span>&nbsp;
+                        <div class="marker marker__col">H</div>
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="0"
+                        data-x="8"
+                      >
+                        <span class="z"></span>&nbsp;
+                        <div class="marker marker__col">I</div>
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="0"
+                        data-x="9"
+                      >
+                        <span class="z"></span>&nbsp;
+                        <div class="marker marker__col">J</div>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr class="battlefield-row">
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="1"
+                        data-x="0"
+                      >
+                        <span class="z"></span>&nbsp;
+                        <div class="marker marker__row">2</div>
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="1"
+                        data-x="1"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="1"
+                        data-x="2"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="1"
+                        data-x="3"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="1"
+                        data-x="4"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="1"
+                        data-x="5"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="1"
+                        data-x="6"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="1"
+                        data-x="7"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="1"
+                        data-x="8"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="1"
+                        data-x="9"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                  </tr>
+                  <tr class="battlefield-row">
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="2"
+                        data-x="0"
+                      >
+                        <span class="z"></span>&nbsp;
+                        <div class="marker marker__row">3</div>
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="2"
+                        data-x="1"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="2"
+                        data-x="2"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="2"
+                        data-x="3"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="2"
+                        data-x="4"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="2"
+                        data-x="5"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="2"
+                        data-x="6"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="2"
+                        data-x="7"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="2"
+                        data-x="8"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="2"
+                        data-x="9"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                  </tr>
+                  <tr class="battlefield-row">
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="3"
+                        data-x="0"
+                      >
+                        <span class="z"></span>&nbsp;
+                        <div class="marker marker__row">4</div>
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="3"
+                        data-x="1"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="3"
+                        data-x="2"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="3"
+                        data-x="3"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="3"
+                        data-x="4"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="3"
+                        data-x="5"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="3"
+                        data-x="6"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="3"
+                        data-x="7"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="3"
+                        data-x="8"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="3"
+                        data-x="9"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                  </tr>
+                  <tr class="battlefield-row">
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="4"
+                        data-x="0"
+                      >
+                        <span class="z"></span>&nbsp;
+                        <div class="marker marker__row">5</div>
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="4"
+                        data-x="1"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="4"
+                        data-x="2"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="4"
+                        data-x="3"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="4"
+                        data-x="4"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="4"
+                        data-x="5"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="4"
+                        data-x="6"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="4"
+                        data-x="7"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="4"
+                        data-x="8"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="4"
+                        data-x="9"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                  </tr>
+                  <tr class="battlefield-row">
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="5"
+                        data-x="0"
+                      >
+                        <span class="z"></span>&nbsp;
+                        <div class="marker marker__row">6</div>
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="5"
+                        data-x="1"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="5"
+                        data-x="2"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="5"
+                        data-x="3"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="5"
+                        data-x="4"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="5"
+                        data-x="5"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="5"
+                        data-x="6"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="5"
+                        data-x="7"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="5"
+                        data-x="8"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="5"
+                        data-x="9"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                  </tr>
+                  <tr class="battlefield-row">
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="6"
+                        data-x="0"
+                      >
+                        <span class="z"></span>&nbsp;
+                        <div class="marker marker__row">7</div>
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="6"
+                        data-x="1"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="6"
+                        data-x="2"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="6"
+                        data-x="3"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="6"
+                        data-x="4"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="6"
+                        data-x="5"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="6"
+                        data-x="6"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="6"
+                        data-x="7"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="6"
+                        data-x="8"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="6"
+                        data-x="9"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                  </tr>
+                  <tr class="battlefield-row">
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="7"
+                        data-x="0"
+                      >
+                        <span class="z"></span>&nbsp;
+                        <div class="marker marker__row">8</div>
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="7"
+                        data-x="1"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="7"
+                        data-x="2"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="7"
+                        data-x="3"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="7"
+                        data-x="4"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="7"
+                        data-x="5"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="7"
+                        data-x="6"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="7"
+                        data-x="7"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="7"
+                        data-x="8"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="7"
+                        data-x="9"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                  </tr>
+                  <tr class="battlefield-row">
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="8"
+                        data-x="0"
+                      >
+                        <span class="z"></span>&nbsp;
+                        <div class="marker marker__row">9</div>
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="8"
+                        data-x="1"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="8"
+                        data-x="2"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="8"
+                        data-x="3"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="8"
+                        data-x="4"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="8"
+                        data-x="5"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="8"
+                        data-x="6"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="8"
+                        data-x="7"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="8"
+                        data-x="8"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="8"
+                        data-x="9"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                  </tr>
+                  <tr class="battlefield-row">
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="9"
+                        data-x="0"
+                      >
+                        <span class="z"></span>&nbsp;
+                        <div class="marker marker__row">10</div>
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="9"
+                        data-x="1"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="9"
+                        data-x="2"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="9"
+                        data-x="3"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="9"
+                        data-x="4"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="9"
+                        data-x="5"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="9"
+                        data-x="6"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="9"
+                        data-x="7"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="9"
+                        data-x="8"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                    <td class="battlefield-cell battlefield-cell__empty">
+                      <div
+                        class="battlefield-cell-content"
+                        data-y="9"
+                        data-x="9"
+                      >
+                        <span class="z"></span>&nbsp;
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="battlefield-label">
+              Opponent's grid
+              <div class="battlefield-label-comment">(another player)</div>
+            </div>
+            <div class="battlefield-start">
+              <div class="battlefield-start-gap">
+                <div class="battlefield-start-choose_rival">
+                  <h3 class="battlefield-start-choose_rival-label">Opponent</h3>
+                  <ul class="battlefield-start-choose_rival-variants">
+                    <li
+                      class="battlefield-start-choose_rival-variant battlefield-start-choose_rival-variant__active"
+                    >
+                      <a
+                        class="battlefield-start-choose_rival-variant-link"
+                        href="/en/"
+                        >random</a
+                      >
+                    </li>
+                    <li class="battlefield-start-choose_rival-variant">
+                      <a
+                        class="battlefield-start-choose_rival-variant-link battlefield-start-choose_rival-variant-link__connect"
+                        href="/en/id10350149"
+                        >friend</a
+                      >
+                      <div class="battlefield-start-ships_types-gap none">
+                        <h4 class="battlefield-start-ships_types-label">
+                          Fleet type
+                        </h4>
+                        <ul class="battlefield-start-ships_types">
+                          <li
+                            class="battlefield-start-ships_type battlefield-start-ships_type__default"
+                          >
+                            <a class="battlefield-start-ships_type-link"
+                              >Russian</a
+                            >
+                          </li>
+                          <li
+                            class="battlefield-start-ships_type battlefield-start-ships_type__classic"
+                          >
+                            <a class="battlefield-start-ships_type-link"
+                              >classic</a
+                            >
+                          </li>
+                        </ul>
+                      </div>
+                      <div class="battlefield-start-choose_rival-variant-url">
+                        <div
+                          class="battlefield-start-choose_rival-variant-url-label"
+                        >
+                          Copy the link and send it to opponent:
+                        </div>
+                        <input
+                          class="battlefield-start-choose_rival-variant-url-input"
+                          type="text"
+                          readonly="readonly"
+                        />
+                      </div>
+                    </li>
+                  </ul>
+                </div>
+                <div class="battlefield-start-button">Play</div>
+              </div>
+            </div>
+          </div>
+          <div class="battlefield-stat none"></div>
+        </div>
+      </div>
+      <div class="dock none">
+        <div class="dock-label">Successful combinations:</div>
+        <div class="dock-sets clearfix">
+          <table
+            class="dock-table"
+            data-coords="[[[9,0],[9,1],[9,2],[9,3]],[[7,0],[7,1],[7,2]],[[5,0],[5,1],[5,2]],[[3,0],[3,1]],[[1,0],[1,1]],[[9,5],[9,6]],[[9,8]],[[1,3]],[[3,3]],[[7,4]]]"
+          >
+            <tbody>
+              <tr>
+                <td class="dock-table-cell">
+                  <span class="dock-table-cell-position-gap"
+                    ><span class="dock-table-cell-position">1)</span></span
+                  >
+                </td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+              </tr>
+              <tr>
+                <td class="dock-table-cell dock-table-cell__marked"></td>
+                <td class="dock-table-cell dock-table-cell__marked"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell dock-table-cell__marked"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+              </tr>
+              <tr>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+              </tr>
+              <tr>
+                <td class="dock-table-cell dock-table-cell__marked"></td>
+                <td class="dock-table-cell dock-table-cell__marked"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell dock-table-cell__marked"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+              </tr>
+              <tr>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+              </tr>
+              <tr>
+                <td class="dock-table-cell dock-table-cell__marked"></td>
+                <td class="dock-table-cell dock-table-cell__marked"></td>
+                <td class="dock-table-cell dock-table-cell__marked"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+              </tr>
+              <tr>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+              </tr>
+              <tr>
+                <td class="dock-table-cell dock-table-cell__marked"></td>
+                <td class="dock-table-cell dock-table-cell__marked"></td>
+                <td class="dock-table-cell dock-table-cell__marked"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell dock-table-cell__marked"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+              </tr>
+              <tr>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+              </tr>
+              <tr>
+                <td class="dock-table-cell dock-table-cell__marked"></td>
+                <td class="dock-table-cell dock-table-cell__marked"></td>
+                <td class="dock-table-cell dock-table-cell__marked"></td>
+                <td class="dock-table-cell dock-table-cell__marked"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell dock-table-cell__marked"></td>
+                <td class="dock-table-cell dock-table-cell__marked"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell dock-table-cell__marked"></td>
+                <td class="dock-table-cell"></td>
+              </tr>
+            </tbody>
+          </table>
+          <table
+            class="dock-table"
+            data-coords="[[[2,7],[3,7],[4,7],[5,7]],[[7,7],[8,7],[9,7]],[[4,5],[5,5],[6,5]],[[0,6],[0,7]],[[5,0],[6,0]],[[8,3],[8,4]],[[6,9]],[[1,2]],[[8,9]],[[1,0]]]"
+          >
+            <tbody>
+              <tr>
+                <td class="dock-table-cell">
+                  <span class="dock-table-cell-position-gap"
+                    ><span class="dock-table-cell-position">2)</span></span
+                  >
+                </td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell dock-table-cell__marked"></td>
+                <td class="dock-table-cell dock-table-cell__marked"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+              </tr>
+              <tr>
+                <td class="dock-table-cell dock-table-cell__marked"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell dock-table-cell__marked"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+              </tr>
+              <tr>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell dock-table-cell__marked"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+              </tr>
+              <tr>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell dock-table-cell__marked"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+              </tr>
+              <tr>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell dock-table-cell__marked"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell dock-table-cell__marked"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+              </tr>
+              <tr>
+                <td class="dock-table-cell dock-table-cell__marked"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell dock-table-cell__marked"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell dock-table-cell__marked"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+              </tr>
+              <tr>
+                <td class="dock-table-cell dock-table-cell__marked"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell dock-table-cell__marked"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell dock-table-cell__marked"></td>
+              </tr>
+              <tr>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell dock-table-cell__marked"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+              </tr>
+              <tr>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell dock-table-cell__marked"></td>
+                <td class="dock-table-cell dock-table-cell__marked"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell dock-table-cell__marked"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell dock-table-cell__marked"></td>
+              </tr>
+              <tr>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell dock-table-cell__marked"></td>
+                <td class="dock-table-cell"></td>
+                <td class="dock-table-cell"></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <span class="dock-closer">×</span>
+      </div>
+      <div class="chat-gap none">
+        <div class="chat">
+          <input
+            type="text"
+            class="input input__textarea chat-teletype"
+            placeholder="Chat with opponent"
+          />
+          <div class="chat-states">
+            <div class="chat-state chat-state__typing chat-state__invisible">
+              Opponent is typing...
+            </div>
+          </div>
+          <ul class="chat-messages">
+            <li class="chat-message chat-message__holder none"></li>
+          </ul>
+        </div>
+      </div>
+      <dl class="settings clearfix">
+        <dt class="settings-label">Settings:</dt>
+        <dd class="setting setting__shoothint" data-name="shoothint">
+          <input
+            class="setting-input"
+            type="checkbox"
+            id="setting__shoothint"
+            value="1"
+            checked="checked"
+          />
+          <label class="setting-label" for="setting__shoothint"
+            >Mark verified empty cells</label
+          >
+        </dd>
+        <dd class="setting setting__compactchat" data-name="compactchat">
+          <input
+            class="setting-input"
+            type="checkbox"
+            id="setting__compactchat"
+            value="1"
+          />
+          <label class="setting-label" for="setting__compactchat"
+            >Compact chat</label
+          >
+        </dd>
+        <dd
+          class="setting setting__notifications"
+          data-name="notifications"
+          data-title-blocked="Desktop notifications is blocked in browser settings for this site"
+        >
+          <input
+            class="setting-input"
+            type="checkbox"
+            id="setting__notifications"
+            value="1"
+          />
+          <label class="setting-label" for="setting__notifications"
+            >Desktop notifications</label
+          >
+        </dd>
+        <dd class="setting setting__opplang none" data-name="opplang">
+          <input
+            class="setting-input"
+            type="checkbox"
+            id="setting__opplang"
+            value="1"
+          />
+          <label class="setting-label" for="setting__opplang"
+            >Select opponent with same language</label
+          >
+        </dd>
+        <dd class="setting setting__sound" data-name="sound">
+          <input
+            class="setting-input"
+            type="checkbox"
+            id="setting__sound"
+            value="1"
+          />
+          <label class="setting-label" for="setting__sound">Sound on</label>
+        </dd>
+      </dl>
+      <div class="sounds none">
+        <audio class="sound sound__game_started" preload="auto">
+          <source src="/static/sound/game_started.ogg" />
+          <source src="/static/sound/game_started.mp3" />
+        </audio>
+        <audio class="sound sound__shoot_missed" preload="auto">
+          <source src="/static/sound/missed.ogg" />
+          <source src="/static/sound/missed.mp3" />
+        </audio>
+        <audio class="sound sound__shoot_wounded" preload="auto">
+          <source src="/static/sound/wounded.ogg" />
+          <source src="/static/sound/wounded.mp3" />
+        </audio>
+        <audio class="sound sound__shoot_killed" preload="auto">
+          <source src="/static/sound/killed.ogg" />
+          <source src="/static/sound/killed.mp3" />
+        </audio>
+        <audio class="sound sound__chat" preload="auto">
+          <source src="/static/sound/chat.ogg" />
+          <source src="/static/sound/chat.mp3" />
+        </audio>
+        <audio class="sound sound__click" preload="auto">
+          <source src="/static/sound/click.ogg" />
+          <source src="/static/sound/click.mp3" />
+        </audio>
+        <audio class="sound sound__win" preload="auto">
+          <source src="/static/sound/win.ogg" />
+          <source src="/static/sound/win.mp3" />
+        </audio>
+        <audio class="sound sound__lose" preload="auto">
+          <source src="/static/sound/lose.ogg" />
+          <source src="/static/sound/lose.mp3" />
+        </audio>
+      </div>
+      <div class="leave none" data-confirm="Data of the game will be lost!">
+        <a
+          href="https://battleship-game.org/en/"
+          rel="nofollow"
+          class="leave-link"
+          >Leave the game</a
+        >
+      </div>
+      <footer class="footer">
+        <div class="copyright clearfix">
+          <span style="float: left">© 2013—2020 battleship-game.org</span>
+          <span class="copyright-links">
+            <a
+              class="copyright-link copyright-link__chrome"
+              href="https://chrome.google.com/webstore/detail/battleship/hjgmfhnanfbghmpcbdfgpigcgdbaggfm?hl=en"
+              target="_blank"
+              ><img
+                style="vertical-align: bottom; margin-right: 2px; border: none"
+                src="/static/i/chrome_web_store-32.png"
+                width="16"
+                height="16"
+                alt="Chrome"
+              />Add to Chrome</a
+            >
+            <span> </span>
+            <a
+              class="copyright-link copyright-link__rules"
+              href="http://en.wikipedia.org/wiki/Battleship_(game)"
+              target="_blank"
+              rel="help"
+              >Rules</a
+            >
+            <span> </span>
+            <a
+              target="_blank"
+              class="copyright-link copyright-link__tournament"
+              href="http://challonge.com"
+              >Create tournament</a
+            >
+            <span> </span>
+            <a class="copyright-link" href="mailto:info@battleship-game.org"
+              >Report error</a
+            >
+          </span>
+        </div>
+      </footer>
+    </div>
+
+    <!-- sda -->
+    <script>
+      (function () {
+        function matchLanguage(lang) {
+          return (
+            location.host.indexOf(lang + ".") != -1 ||
+            location.pathname.indexOf("/" + lang + "/") != -1
+          );
+        }
+
+        var sdaLocalLangsMap = {
+          da: "Kvadrater",
+          de: "Käsekästchen",
+          en: "Dots and Boxes",
+          es: "Timbiriche",
+          fr: "La Pipopipette",
+          it: "Punti e linee",
+          nl: "Kamertje verhuren",
+          pl: "Szewc",
+          ru: "Точки и палочки",
+          sl: "Točke in kvadrati",
+          fi: "Pisteitä ja laatikot",
+          uk: "Палички",
+          zh: "點格棋",
+        };
+
+        function getSdaGoogle() {
+          return (
+            '<div class="sda-block sda-block__google"><script async="async" src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></s' +
+            'cript><ins class="adsbygoogle" style="display:inline-block;width:728px;height:90px" data-ad-client="ca-pub-2693394875594183" data-ad-slot="2533875692"></ins><script>(adsbygoogle = window.adsbygoogle || []).push({});</' +
+            "script></div>"
+          );
+        }
+
+        function getSdaLocal() {
+          var lang = "en";
+
+          for (var k in sdaLocalLangsMap) {
+            if (matchLanguage(k)) {
+              lang = k;
+              break;
+            }
+          }
+
+          var linkUrl = "https://nastolki.online/" + lang + "/dots/";
+
+          var sdaTitle =
+            '<br /><a target="_blank" href="' +
+            linkUrl +
+            '?from=mb">' +
+            sdaLocalLangsMap[lang] +
+            "</a>";
+
+          return (
+            '<div class="sda-block sda-block__local"><div class="sda-block-gap">' +
+            sdaTitle +
+            "</div></div>"
+          );
+        }
+
+        var sdaBlock = getSdaGoogle();
+
+        if (window.adblock || matchLanguage("ru")) {
+          sdaBlock = getSdaLocal();
+        }
+
+        try {
+          if (top.location == self.location) {
+            document.write(
+              '<div class="sda sda__vh" id="sda">' + sdaBlock + "</div>"
+            );
+          }
+        } catch (exception) {}
+
+        setTimeout(() => {
+          var isAdsenseNotLoaded =
+            typeof adsbygoogle === "undefined" ||
+            typeof adsbygoogle.loaded === "undefined";
+
+          if (isAdsenseNotLoaded) {
+            if (window.yaCounter20587900) {
+              window.yaCounter20587900.reachGoal("adsNotLoaded");
+            }
+
+            document.getElementById("sda").innerHTML = getSdaLocal();
+          }
+        }, 4000);
+      })();
+    </script>
+    <div class="sda" id="sda">
+      <div class="sda-block sda-block__google">
+        <script
+          async="async"
+          src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
+        ></script>
+        <ins
+          class="adsbygoogle"
+          style="display: inline-block; width: 728px; height: 90px"
+          data-ad-client="ca-pub-2693394875594183"
+          data-ad-slot="2533875692"
+          ><iframe
+            id="aswift_1"
+            style="
+              height: 1px !important;
+              max-height: 1px !important;
+              max-width: 1px !important;
+              width: 1px !important;
+            "
+            ><iframe id="google_ads_frame1"></iframe></iframe
+        ></ins>
+        <script>
+          (adsbygoogle = window.adsbygoogle || []).push({});
+        </script>
+      </div>
+    </div>
+    <!-- //sda -->
+
+    <script>
+      if (top.location != self.location) {
+        document.write("</div>");
+      }
+    </script>
+
+    <script>
+      (function (b, c, a) {
+        (c[a] = c[a] || []).push(function () {
+          try {
+            c.yaCounter20587900 = new Ya.Metrika({
+              id: 20587900,
+              clickmap: !0,
+              trackLinks: !0,
+              accurateTrackBounce: !0,
+            });
+          } catch (a) {}
+        });
+        var e = b.getElementsByTagName("script")[0],
+          d = b.createElement("script");
+        a = function () {
+          e.parentNode.insertBefore(d, e);
+        };
+        d.async = !0;
+        d.src = "https://mc.yandex.ru/metrika/watch.js";
+        "[object Opera]" == c.opera
+          ? b.addEventListener("DOMContentLoaded", a, !1)
+          : a();
+      })(document, window, "yandex_metrika_callbacks");
+    </script>
+  </body>
 </html>
